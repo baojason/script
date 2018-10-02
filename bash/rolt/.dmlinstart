@@ -1,0 +1,17 @@
+#!/bin/bash
+# Re-install Line DML
+# Example: 
+# [root@REPON_OLT dml]# ./dmlinstart.sh install_rolt_dml-E4.1.1.1.dev.sh 
+
+INSTALLSCRIPT=$1
+cp /usr/local/dml/etc/dmlConfig.xml /mnt/data/dml/dmlConfig.xml
+dml stop
+quxsdk stop
+(cd /; /mnt/data/dml/$INSTALLSCRIPT;)
+cp /mnt/data/dml/dmlConfig.xml /usr/local/dml/etc/dmlConfig.xml
+sleep 1
+quxsdk start
+sleep 5
+/sbin/udhcpc -i tap0mgmt -p /var/run/udhcpc.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc.script
+udhcpc6 -i tap0mgmt -p /var/run/udhcpc6.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc6.script
+dml start
