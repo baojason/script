@@ -1,5 +1,6 @@
 #!/bin/bash
 
-./.dmlinstart $1 &>/dev/null &
-disown
+#./.dmlinstart $1 &>/dev/null &
+# disown
+nohup ./.dmlinstart $1 &
 exit
