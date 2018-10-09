@@ -12,8 +12,9 @@ echo "run $INSTALLSCRIPT"
 cp /mnt/data/dml/dmlConfig.xml /usr/local/dml/etc/dmlConfig.xml
 sleep 1
 quxsdk start
-sleep 5
+sleep 10
 echo "======== udhcpc ==========="
+sleep 10
 (cd /; /sbin/udhcpc -i tap0mgmt -p /var/run/udhcpc.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc.script)
 #udhcpc6 -i tap0mgmt -p /var/run/udhcpc6.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc6.script
 dml start
