@@ -1,0 +1,4 @@
+set pagination off
+set height 0
+thread apply all bt
+quit
