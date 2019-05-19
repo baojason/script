@@ -1,0 +1,392 @@
+#define RAISE (-45)
+#define DELTA 1
+#define MNUM 3
+#define NAP 10  // milliseconds
+#define MAILBOX 0
+#define MASTER_CHANNEL 0
+
+
+bool btchannelcheck(int conn)
+{
+  int e = BluetoothStatus(conn);
+  string m;
+
+  if(e==NO_ERR) {
+    return true;
+  }
+
+  TextOut(0, LCD_LINE3, "Bluetooth error", true);
+  NumOut(0,  LCD_LINE4, e);
+  TextOut(0, LCD_LINE8, "on channel -.");
+  NumOut(66, LCD_LINE8, conn);
+
+  return false;
+}
+
+void btwaitfor(int conn)
+{
+  byte e=NO_ERR+1;
+  while(e!=NO_ERR)
+  {
+    e=BluetoothStatus(conn);
+
+    if(e==NO_ERR) break;
+    if(e==STAT_COMM_PENDING) continue;
+
+    TextOut(0, LCD_LINE2, "Bluetooth error:", true);
+    NumOut(30, LCD_LINE4, e);
+
+    switch(e)
+    {
+     case ERR_COMM_CHAN_NOT_READY:
+          TextOut(0, LCD_LINE6, "NXT bluetooth");
+          TextOut(0, LCD_LINE7, "not connected!");
+          break;
+
+     case ERR_COMM_BUS_ERR:
+          TextOut(0, LCD_LINE6, "bus error:");
+          TextOut(0, LCD_LINE7, "please reboot");
+          break;
+    }
+    Wait(100);
+    Stop(true);
+  }
+}
+
+string receivefrommaster()
+{
+  string msg;
+  btwaitfor(MASTER_CHANNEL);
+  ReceiveMessage(MAILBOX, true, msg);
+  btwaitfor(MASTER_CHANNEL);
+  return msg;
+}
+
+void sendtomaster(string msg)
+{
+  byte mbx=MAILBOX+10;
+  btwaitfor(MASTER_CHANNEL);
+  SendMessage(mbx, msg);
+  btwaitfor(MASTER_CHANNEL);
+}
+
+void waitMasterChannelReady()
+{
+  for (;;) {
+    if (btchannelcheck(MASTER_CHANNEL)) break;
+    Wait(1000);
+  }
+}
+
+mutex moveMutex;
+u8 AllPorts[3] = {OUT_A, OUT_B, OUT_C};
+
+/** Convert motor bits to motor port ID
+    @motors:     Motor bits, A B C
+    @return motor ID */
+u8 getPortId(u8 motors)
+{
+    u8 port = 255;
+    switch(motors) {
+        case 1:
+            port = OUT_C;
+            break;
+        case 2:
+            port = OUT_B;
+            break;
+        case 3:
+            port = OUT_BC;
+            break;
+        case 4:
+            port = OUT_A;
+            break;
+        case 5:
+            port = OUT_AC;
+            break;
+        case 6:
+            port = OUT_AB;
+            break;
+        case 7:
+            port = OUT_ABC;
+            break;
+        case 0:
+        default:
+            port = 255;
+            break;
+    }
+    return port;
+}
+u8 portId[8] = {
+    0xff, OUT_C, OUT_B, OUT_BC, OUT_A, OUT_AC, OUT_AB, OUT_ABC
+};
+/** Convert port ID to motor bits
+    @index: motor port ID
+    @return motor ID */
+u8 motorbits[7] = {
+    0x04, 0x02, 0x01, 0x06, 0x05,0x03, 0x07
+};
+
+struct motorInfoT {
+    byte motorId;
+    u16 waitTime;
+    bool hit;
+    bool select;
+    bool done;
+};
+
+/** Global variable: Motor data */
+motorInfoT tgt[MNUM] = {
+    {OUT_A, 5000, false, false, false},
+    {OUT_B, 5000, false, false, false},
+    {OUT_C, 5000, false, false, false}
+};
+
+void setOneMotorData(byte port, u16 time)
+{
+    for(int i=0; i<MNUM; i++) {
+        if (tgt[i].motorId == port) {
+           tgt[i].waitTime = time;
+           tgt[i].select = true;
+           tgt[i].done = false;
+        } else {
+           tgt[i].waitTime = 0;
+           tgt[i].select = false;
+           tgt[i].done = true;
+        }
+        tgt[i].hit = false;
+    }
+}
+
+void setRandomMotor(u16 time)
+{
+    int r = Random(MNUM);
+    setOneMotorData(r, time);
+}
+
+void setMotorWaitTime(u16 time)
+{
+    int i;
+    for(i=0; i<MNUM; i++) tgt[i].waitTime = time;
+}
+
+/** Global variable: Motor wait time */
+u16 mwt[MNUM] = { 3000, 5000, 7000 };
+
+/** Generate random order of different waiting time
+    (3, 5, 7 seconds) for 3 motors */
+void setRandomWaitTime()
+{
+    int i, j, r, ct;
+    ClearScreen();
+    for(i=0; i<MNUM; i++) tgt[i].done = false;
+    for(i=0; i<MNUM; i++) {
+        r = Random(MNUM-i);
+        ct = 0;
+        for(j=0; j<MNUM; j++) {
+            if(!tgt[j].done) {
+                if(ct==r) {
+                    tgt[j].waitTime = mwt[i];
+                    tgt[j].done = true;
+                    //NumOut(0, LCD_LINE1 - i*8, j);
+                    break;
+                }
+                ct++;
+            }
+        }
+    }
+    for(i=0; i<MNUM; i++) {
+        tgt[i].select = true;
+        tgt[i].done = false;
+    }
+}
+
+byte getMotorId()
+{
+    u8 i, mbits = 0;
+    u8 num = ArrayLen(tgt);
+    for (i=0; i<num; i++) {
+        if (tgt[i].select)
+           mbits |= motorbits[tgt[i].motorId];
+    }
+    if (mbits<8)
+        return portId[mbits];
+    else
+        return 255;
+}
+
+/** Raise up a target and wait to be hitted
+    @mInfos:     Pointer to Motor Info (array)
+    @num:        Array size
+    @turnDegree: Motor trun degree
+    @timeOut:    Maximum wait time in milliseconds
+    Message formats (send to master (a python script) by bluetooth):
+    1. tgt t0 wt<num> t1 wt<num> t2 wt<num>
+    2. wtm <num>
+    3. hit <target index> Max Waiting:<num>ms
+    */
+void shootTarget(int turnDegree)
+{
+    int waitTime = 0;
+    int sleepTime = 200;
+    int rotation = 0;
+    u8 i, mbits, done = 0;
+    byte port;
+    int num, tnum;
+    string btMsg;
+    num = ArrayLen(tgt);
+
+    if ((num > 3) || (turnDegree > 100) || (turnDegree < -100)) return;
+
+    port = getMotorId();
+    if (port == 255) return;
+
+    // reset tacho count
+    SetOutput(port, TachoCountField, 0);
+    // raise the target - outPort
+    RotateMotorPID(port, 75, turnDegree, 20, 20, 20);
+    // Stop motor
+    OffEx(AllPorts, RESET_ALL);
+    tnum = 0;
+    btMsg = "tgt";
+    for (i=0; i<num; i++) {
+       tgt[i].done = false;
+       if(tgt[i].select) {
+          tnum++;
+          btMsg = StrCat(btMsg, " t");
+          btMsg = StrCat(btMsg, NumToStr(i));
+          btMsg = StrCat(btMsg, " wt");
+          btMsg = StrCat(btMsg, NumToStr(tgt[i].waitTime));
+       }
+    }
+    sendtomaster(btMsg);
+
+    do {
+        /* send watiTime */
+        btMsg = StrCat("wtm ", NumToStr(waitTime));
+        sendtomaster(btMsg);
+        Wait(sleepTime);
+        waitTime += sleepTime;
+        mbits = 0;
+        for (i = 0; i<num; i++) {
+            if (!tgt[i].select) continue;
+            if (tgt[i].done) continue;
+            port = tgt[i].motorId;
+            rotation = GetOutput(port, TachoCountField);
+            if (abs(rotation) > DELTA) {
+               tgt[i].hit = true;
+               mbits |= motorbits[tgt[i].motorId];
+               NumOut(0, LCD_LINE1 + port, rotation);
+               //RotateMotorPID(tgt[i].motorId, 75, -(turnDegree - rotation), 20, 20, 20);
+               //OffEx(tgt[i].motorId, RESET_ALL);
+               tgt[i].done = true;
+               btMsg = StrCat("hit ", NumToStr(i));
+               btMsg = StrCat(btMsg, " Max Waiting:");
+               btMsg = StrCat(btMsg, NumToStr(tgt[i].waitTime));
+               btMsg = StrCat(btMsg, "ms");
+               sendtomaster(btMsg);
+               done++;
+            } else if (waitTime >= tgt[i].waitTime) {
+               mbits |= motorbits[tgt[i].motorId];
+               //RotateMotorPID(mI[i].motorId, 75, -turnDegree, 20, 20, 20);
+               //OffEx(mInfos[i].motorId, RESET_ALL);
+               tgt[i].done = true;
+               done++;
+            }
+        }
+        if (mbits) {
+            port = portId[mbits];
+            if (port<=OUT_ABC) {
+               RotateMotorPID(port, 75, -turnDegree, 20, 20, 20);
+               OffEx(port, RESET_ALL);
+            }
+        }
+    } while (done<tnum);
+}
+
+/** report hit or not
+    @hit   Flag indicating hit or not */
+void reportHit()
+{
+    int num = ArrayLen(tgt);
+    //bool hit = false;
+    ClearScreen();
+    for (int i=0; i<num; i++) {
+        if (!tgt[i].select) continue;
+        if (tgt[i].hit) {
+            TextOut(0, LCD_LINE1 - i*8, "Good Job!!");
+        } else {
+            TextOut(0, LCD_LINE1 - i*8, "Fail!!");
+        }
+    }
+}
+
+
+
+int execCmd(string cmdStr)
+{
+  int ret = -1;
+  int l = StrLen(cmdStr);
+  string retMsg = "ER";
+
+  if (strncmp("eo", cmdStr, 2) == 0) {
+    if (l > 3) {
+      retMsg = SubStr(cmdStr, 3, l-3);
+      ret = 0;
+    } else {
+      retMsg = "ER for command \"eo\"";
+    }
+  } else if (strncmp("sh", cmdStr, 2) == 0) {
+    // shooting command, stand up all tagets and wait them to be hit, then report the hits
+    setRandomWaitTime();
+    shootTarget(RAISE);
+    reportHit();
+
+    retMsg = "end";
+  }
+  // -- send the message via bluetooth channel to the master NXT:
+  TextOut(54, LCD_LINE1, retMsg);
+  sendtomaster(retMsg);
+  return ret;
+}
+
+int listenAndExec()
+{
+  string r;
+  int j;
+  for(;;)
+  {
+    // -- get a command string from the master:
+    r = receivefrommaster();
+
+    // -- lenght of message string (zero means "no message received"):
+    j = StrLen(r);
+
+    // -- print to screen only if there is a message
+
+    if(j!=0)
+    {
+      if (execCmd(r) != 0) r = StrCat(r, " ERROR");
+      TextOut(0, LCD_LINE5, "                ");
+      TextOut(0, LCD_LINE5, r);
+    }
+
+    // -- have a small nap (to not to quickly drain batteries)...
+    Wait(NAP);
+
+    // -- ...but don't fall asleep!
+    ResetSleepTimer();
+  }
+  return 0;
+}
+
+task main() {
+    u8 port = OUT_ABC;
+    bool hit = false;
+    int turnDegree = RAISE;
+    waitMasterChannelReady();
+    ClearScreen();
+
+    listenAndExec();
+
+    Wait(2000);
+}
