@@ -16,6 +16,8 @@ class tttBoard:
         # Initialize the game board with a boardSize * boardSize list with all 0s
         self.__bd = [ [0 for _ in range(boardSize)] for _ in range(boardSize) ]
         self.__currPlayer = 1
+        self.winPt1 = (0,0)
+        self.winPt2 = (0,0)
 
     def getBoardSize(self):
         return self.__bdSz
@@ -78,6 +80,8 @@ class tttBoard:
             else:
                 ct1 = ct2 = 0
         if w != 0:
+            self.winPt1 = f(ii-self.__roSz + 1, t)
+            self.winPt2 = f(ii, t)
             for j in range(ii, ii-self.__roSz, -1):
                 x, y = f(j, t)
                 self.__bd[x][y] += 10 #indicate this is a place of how it wins
