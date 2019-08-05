@@ -64,6 +64,15 @@ class graphBoard:
 
         self.cv.create_oval(xi1, yi1, xi2, yi2, fill="dark green" if player == 1 else "orange2", outline="#fff", width=2)
 
+    def __drawWinResult(self, p0, p1):
+        #calculte the centel point of p0 and p1
+        xi1 = self.bgcv.pt1[0] + p0[0] * self.latticeSz + int(self.latticeSz/2)
+        yi1 = self.bgcv.pt1[1] + p0[1] * self.latticeSz + int(self.latticeSz/2)
+        xi2 = self.bgcv.pt1[0] + p1[0] * self.latticeSz + int(self.latticeSz/2)
+        yi2 = self.bgcv.pt1[1] + p1[1] * self.latticeSz + int(self.latticeSz/2)
+        self.cv.create_line(xi1, yi1, xi2, yi2, width=int(self.latticeSz * 0.2), fill='red')
+        #self.cv.tag_raise(winline)
+
     def click(self, event):
         x, y = event.x - self.bgcv.pt1[0], event.y - self.bgcv.pt1[1]
         # convert x,y to lattice coordinate. E.g.  The lattice at the second row,
@@ -76,6 +85,8 @@ class graphBoard:
         global player
         self.__drawPlayer(player, (x,y))
         player = 1 if player!=1 else 2
+        if x==10 and y==10:
+            self.__drawWinResult((10,10), (10,14))
 
     def run(self):
         # Go into the main loop to capture mouse clicks
