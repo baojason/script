@@ -90,6 +90,8 @@ class NXTBT:
             target1 = Image(Point(win.getWidth()/2-offset, 550), "target.png")
             target2 = Image(Point(win.getWidth()/2, 550), "target.png")
             target3 = Image(Point(win.getWidth()/2+offset, 550), "target.png")
+            bg1 = Image(Point(win.getWidth()/2, win.getHeight()/2), "trees.png" if "1" in msg else "church.png")
+            bg1.draw(win)
             wtime = [0,0,0]
             cwtime = [0,0,0]
             tS = [0,0,0]
@@ -244,7 +246,7 @@ def showStarting(win):
 
 def genScore(win, score):
     scoreMsg = Text(Point(win.getWidth()/2, 50), 'SCORE: ' + str(score))
-    scoreMsg.setTextColor('green')
+    scoreMsg.setTextColor('red')
     scoreMsg.setSize(32)
     return scoreMsg
 
@@ -255,8 +257,8 @@ def clearwin(win):
     win.update()
 
 def shootWin():
-    width = 1450
-    height = 950
+    width = 1920
+    height = 1080
     win = GraphWin('SHOOTING GAME', width, height)
     win.setBackground(color_rgb(0,0,0))
     if myNxt.openConnection():
