@@ -90,8 +90,6 @@ class NXTBT:
             target1 = Image(Point(win.getWidth()/2-offset, 550), "target.png")
             target2 = Image(Point(win.getWidth()/2, 550), "target.png")
             target3 = Image(Point(win.getWidth()/2+offset, 550), "target.png")
-            bg1 = Image(Point(win.getWidth()/2, win.getHeight()/2), "trees.png" if "1" in msg else "church.png")
-            bg1.draw(win)
             wtime = [0,0,0]
             cwtime = [0,0,0]
             tS = [0,0,0]
@@ -261,6 +259,8 @@ def shootWin():
     height = 1080
     win = GraphWin('SHOOTING GAME', width, height)
     win.setBackground(color_rgb(0,0,0))
+    bg1 = Image(Point(win.getWidth()/2, win.getHeight()/2), "trees.png")
+    bg2 = Image(Point(win.getWidth()/2, win.getHeight()/2), "church.png")
     if myNxt.openConnection():
         while True:
             msg = myNxt.Cmd_EchoMsg("NXT Bluetooth is successfully set")
@@ -273,10 +273,12 @@ def shootWin():
             showStarting(win)
             myNxt.resetScore()
             myNxt.resetTgt()
+            bg1.draw(win)
             myNxt.Cmd_Shoot("target 1", win)
             if myNxt.getRoundScore() != 0:
                 myNxt.resetTgt()
                 clearwin(win)
+                bg2.draw(win)
                 myNxt.Cmd_Shoot("target 2", win)
             scoMsg = genScore(win, myNxt.getScore())
             scoMsg.draw(win)
