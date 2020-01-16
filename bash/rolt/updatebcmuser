@@ -1,0 +1,25 @@
+#!/bin/bash
+# Update bcm.user
+# Example: 
+# [root@REPON_OLT dml]# updatebcmuser /root/bcm.user
+
+NEWBCMUSER=$1
+dml stop
+service_supervisor stop line_dml_startup_daemon
+quxsdk stop
+if [ ! -f $NEWBCMUSER ]; then
+    echo "File not found!"
+else
+    cp $NEWBCMUSER /usr/local/bin/bcm.user
+fi
+
+quxsdk start
+sleep 10
+echo "======== udhcpc ==========="
+sleep 10
+/sbin/udhcpc -i tap0mgmt -p /var/run/udhcpc.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc.script
+sleep 5
+udhcpc6 -i tap0mgmt -p /var/run/udhcpc6.tap0mgmt.pid -R -S -s /etc/udhcpc/udhcpc6.script
+sleep 5
+service_supervisor start line_dml_startup_daemon
+dml start
