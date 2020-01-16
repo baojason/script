@@ -1,0 +1,10 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhist_cnt =8
+let g:netrw_dirhist_1='/home/jbao/p4/jbao_vm/testing/dragon/main/tests/experimental/R-OLT/test_1008_rolt_lag_app/cint'
+let g:netrw_dirhist_2='/home/jbao/dml/sumitomo-dpoe/FSU7100/FSR/MAKE/FSR714X/dml3/dml3'
+let g:netrw_dirhist_3='/home/jbao/p4/jbao_vm/testing/dragon/main/tests/experimental/R-OLT/test_1008_rolt_lag_app'
+let g:netrw_dirhist_4='/home/jbao/test/dragon/dragon/tests/experimental/R-OLT/test_1005_rolt_pon_ds_qos'
+let g:netrw_dirhist_5='/home/jbao/dragon/dragon-automation/dragon/config/cint/cint-sdk'
+let g:netrw_dirhist_6='/home/jbao/p4/jbao_vm/package/broadcom_switch_sdk/main/resources/bcm_sdk/src/examples'
+let g:netrw_dirhist_7='/home/jbao/dml/adpkgdml/dml/out/line/sysroot'
+let g:netrw_dirhist_8='/home/jbao/Perforce/jbao_gwd/bld_repon_olt/log/ezsmb'
