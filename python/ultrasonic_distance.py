@@ -40,10 +40,12 @@ GPIO.setmode(GPIO.BOARD)
 #set GPIO Pins
 GPIO_TRIGGER = 11
 GPIO_ECHO = 12
+GPIO_LED = 13
 
 #set GPIO direction (IN/OUT)
 GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(GPIO_ECHO, GPIO.IN)
+GPIO.setup(GPIO_LED, GPIO.OUT)
 
 def distance():
     # set Trigger with a pulse of 0.00001s
@@ -75,6 +77,10 @@ if __name__ == '__main__':
         while True:
             dist = distance()
             print ("Measured Distance = %.1f cm" % dist)
+            if dist < 30:
+                GPIO.output(GPIO_LED, True)
+            else:
+                GPIO.output(GPIO_LED, False)
             time.sleep(0.1)
 
     except KeyboardInterrupt:
