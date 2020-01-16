@@ -244,7 +244,7 @@ def showStarting(win):
 
 def genScore(win, score):
     scoreMsg = Text(Point(win.getWidth()/2, 50), 'SCORE: ' + str(score))
-    scoreMsg.setTextColor('green')
+    scoreMsg.setTextColor('red')
     scoreMsg.setSize(32)
     return scoreMsg
 
@@ -255,10 +255,17 @@ def clearwin(win):
     win.update()
 
 def shootWin():
+<<<<<<< HEAD
     width = 1280
     height = 720
+=======
+    width = 1920
+    height = 1080
+>>>>>>> ad2fb423eb0ff7f2412eec4a4a4d661b047bd639
     win = GraphWin('SHOOTING GAME', width, height)
     win.setBackground(color_rgb(0,0,0))
+    bg1 = Image(Point(win.getWidth()/2, win.getHeight()/2), "trees.png")
+    bg2 = Image(Point(win.getWidth()/2, win.getHeight()/2), "church.png")
     if myNxt.openConnection():
         while True:
             msg = myNxt.Cmd_EchoMsg("NXT Bluetooth is successfully set")
@@ -271,10 +278,12 @@ def shootWin():
             showStarting(win)
             myNxt.resetScore()
             myNxt.resetTgt()
+            bg1.draw(win)
             myNxt.Cmd_Shoot("target 1", win)
             if myNxt.getRoundScore() != 0:
                 myNxt.resetTgt()
                 clearwin(win)
+                bg2.draw(win)
                 myNxt.Cmd_Shoot("target 2", win)
             scoMsg = genScore(win, myNxt.getScore())
             scoMsg.draw(win)
