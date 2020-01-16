@@ -255,8 +255,8 @@ def clearwin(win):
     win.update()
 
 def shootWin():
-    width = 1450
-    height = 950
+    width = 1280
+    height = 720
     win = GraphWin('SHOOTING GAME', width, height)
     win.setBackground(color_rgb(0,0,0))
     if myNxt.openConnection():
